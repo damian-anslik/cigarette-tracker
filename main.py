@@ -6,18 +6,19 @@ db_client = Client(
     supabase_url=st.secrets["SUPABASE_URL"],
     supabase_key=st.secrets["SUPABASE_KEY"],
 )
+cigarettes_table = db_client.table("cigarettes")
 strings = {
     "TRACK_BUTTON_LABEL": "🚬 Track",
 }
 
 
 def track_cigarette() -> dict:
-    insert_response = db_client.table("cigarettes").insert({}).execute()
+    insert_response = cigarettes_table.insert({}).execute()
     return insert_response.data[0]
 
 
 def get_cigarette_data() -> dict:
-    fetch_response = db_client.table("cigarettes").select("*").execute()
+    fetch_response = cigarettes_table.select("*").execute()
     return fetch_response.data
 
 
@@ -47,7 +48,11 @@ def main():
     if prepared_data is None:
         st.success("You haven't smoked any cigarettes yet.")
     else:
-        st.table(prepared_data.style.format({"Cigarettes Smoked": "🚬 {:d}"}))
+        NUM_DAYS_TO_SHOW = 14
+        st.bar_chart(
+            data=prepared_data.tail(NUM_DAYS_TO_SHOW),
+            use_container_width=True,
+        )
     track_button = st.button(strings["TRACK_BUTTON_LABEL"], use_container_width=True)
     if track_button:
         tracked_cigarette_data = track_cigarette()
