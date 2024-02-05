@@ -1,24 +1,25 @@
 from supabase.client import Client
+from functools import lru_cache
 import streamlit as st
 import pandas as pd
 
-db_client = Client(
-    supabase_url=st.secrets["SUPABASE_URL"],
-    supabase_key=st.secrets["SUPABASE_KEY"],
-)
-cigarettes_table = db_client.table("cigarettes")
-strings = {
-    "TRACK_BUTTON_LABEL": "🚬 Track",
-}
+
+@lru_cache
+def get_cigarettes_table():
+    db_client = Client(
+        supabase_url=st.secrets["SUPABASE_URL"],
+        supabase_key=st.secrets["SUPABASE_KEY"],
+    )
+    return db_client.table("cigarettes")
 
 
 def track_cigarette() -> dict:
-    insert_response = cigarettes_table.insert({}).execute()
+    insert_response = get_cigarettes_table().insert({}).execute()
     return insert_response.data[0]
 
 
 def get_cigarette_data() -> dict:
-    fetch_response = cigarettes_table.select("*").execute()
+    fetch_response = get_cigarettes_table().select("*").execute()
     return fetch_response.data
 
 
@@ -53,7 +54,7 @@ def main():
             data=prepared_data.tail(NUM_DAYS_TO_SHOW),
             use_container_width=True,
         )
-    track_button = st.button(strings["TRACK_BUTTON_LABEL"], use_container_width=True)
+    track_button = st.button("🚬 Track", use_container_width=True)
     if track_button:
         tracked_cigarette_data = track_cigarette()
         st.session_state["data"].append(tracked_cigarette_data)
